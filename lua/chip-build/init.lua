@@ -2,7 +2,6 @@
 local M = {}
 
 local run_build = function(target)
-  -- TODO: run a async build using podman....
   local ovs = require('overseer')
 
   local task = ovs.new_task({
@@ -19,24 +18,25 @@ local run_build = function(target)
         target)
     },
     components = {
-      -- {
-      --   "on_output_quickfix",
-      --   errorformat = vim.o.grepformat,
-      --   open = not params.bang,
-      --   open_height = 8,
-      --   items_only = true,
-      -- },
-      -- {"on_complete_dispose", timeout=30}
+      {
+         "on_output_quickfix",
+         open_height = 16,
+         open = true,
+         -- TODO: dir must exist AND path is off
+         --       probably want a custom matcher here
+         -- relative_file_root = string.format("/home/andrei/devel/connectedhomeip/out/%s", target)
+         -- items_only = true,
+      },
       "default",
     }
-
   })
   task:start()
 
-  ovs.open()
+  -- Can show ovs ... not sure if we want, however seems ok
+  ovs.open({ direction = "right", enter = false  })
 end
 
-M.test = function()
+M.build = function()
   local pickers = require('telescope.pickers')
   local finders = require('telescope.finders')
   local conf = require('telescope.config').values
@@ -186,8 +186,8 @@ M.setup = function(options)
   vim.api.nvim_create_user_command("ChipBuild", function(opts)
     local cb = require('chip-build')
     local cmd = opts.args
-    if cmd == "test" then
-      cb.test()
+    if cmd == "build" then
+      cb.build()
     elseif cmd == "devel_reset" then
       cb.devel_reset()
     else
@@ -198,9 +198,9 @@ M.setup = function(options)
   })
 
 
-  vim.api.nvim_set_keymap('n', '<Space>tt', "<CMD>ChipBuild test<CR>", { noremap = true })
+  vim.api.nvim_set_keymap('n', '<leader>obb', "<CMD>ChipBuild build<CR>", { noremap = true })
   if options.development or false then
-    vim.api.nvim_set_keymap('n', '<Space>tr', "<CMD>ChipBuild devel_reset<CR>", { noremap = true })
+    vim.api.nvim_set_keymap('n', '<leader>obr', "<CMD>ChipBuild devel_reset<CR>", { noremap = true })
   end
 end
 
