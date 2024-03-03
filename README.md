@@ -30,5 +30,5 @@ In LunarVim you can do:
 Set the runtime path including the local plugin:
 
 ```
-vim --cmd "set rtp+=." --cmd ":lua require('chip-build').setup({development=true})"
+vim --cmd "set rtp^=.,&rtp" --cmd ":lua require('chip-build').setup({development=true})"
 ```
