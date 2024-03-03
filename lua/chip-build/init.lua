@@ -38,6 +38,48 @@ local run_build = function(target)
   ovs.open({ direction = "right", enter = false })
 end
 
+local load_history = function()
+  local save_path = vim.fn.stdpath('cache') .. '/chip-build-history.json'
+  local f = io.open(save_path, 'r')
+  if f == nil then
+    return {}
+  end
+
+  local data = vim.json.decode(f:read("*a"))
+  f:close()
+
+  return data
+end
+
+local save_target_to_history = function(txt)
+  local save_path = vim.fn.stdpath('cache') .. '/chip-build-history.json'
+  print(string.format("Saving history to: %s", save_path))
+
+  -- TODO: merge with old data
+  local old_history = load_history()
+  local history = {}
+  local existing_history = {}
+
+  table.insert(history, 1, txt)
+  existing_history[txt] = true
+
+  for _, v in ipairs(old_history) do
+    if not existing_history[v] then
+      existing_history[v] = true
+      table.insert(history, v)
+    end
+  end
+
+  local f = io.open(save_path, 'w')
+  if f == nil then
+    print(string.format('Failed to write to %s', save_path))
+    return
+  end
+
+  f:write(vim.json.encode(history))
+  f:close()
+end
+
 M.build = function()
   local pickers = require('telescope.pickers')
   local finders = require('telescope.finders')
@@ -52,6 +94,15 @@ M.build = function()
     local ui_choices = {}
     if opts.final or false then
       table.insert(ui_choices, 'DONE')
+    end
+
+    local history = {}
+    if #components == 0 then
+      -- this is the first expectation ... add UI shoices for  history
+      history = load_history()
+      for _, v in ipairs(history) do
+        table.insert(ui_choices, 'TARGET: ' .. v)
+      end
     end
 
     if next_choices then
@@ -77,6 +128,13 @@ M.build = function()
             for i = 2, #components, 1 do
               target_name = target_name .. "-" .. components[i]
             end
+            save_target_to_history(target_name)
+            run_build(target_name)
+            return
+          end
+          if choice:sub(1,8) == 'TARGET: ' then
+            local target_name = choice:sub(9)
+            save_target_to_history(target_name)
             run_build(target_name)
             return
           end
