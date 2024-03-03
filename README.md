@@ -27,6 +27,27 @@ In LunarVim you can do:
 
 ## Development
 
+### Unit testing
+
+Install [luarocks](http://luarocks.org).
+
+[busted](https://lunarmodules.github.io/busted/) unit test framework via 
+`luarocks instal busted --local`
+
+Then you can add `$HOME/.luarocks/bin` to your path or execute
+`$HOME/.luarocks/bin/busted` directly from within the `lua/chip-build`
+subsidrectory:
+
+```
+$HOME/.luarocks/bin/busted -m 'lua/?.lua;lua/?/init.lua' lua/chip-build/test.lua
+```
+
+Or execute `tests.sh` which does the same thing.
+
+
+
+### Running inside nvim (to test the real thing)
+
 Set the runtime path including the local plugin:
 
 ```
