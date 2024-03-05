@@ -48,14 +48,18 @@ local load_history = function()
   local data = vim.json.decode(f:read("*a"))
   f:close()
 
+  if type(data) ~= 'table' then
+    data = {}
+  end
+
   return data
 end
 
 local save_target_to_history = function(txt)
   local save_path = vim.fn.stdpath('cache') .. '/chip-build-history.json'
-  print(string.format("Saving history to: %s", save_path))
+  -- Will NOT print as the messages can get annoying
+  vim.notify(string.format("Saving history to: %s", save_path), vim.log.levels.DEBUG)
 
-  -- TODO: merge with old data
   local old_history = load_history()
   local history = {}
   local existing_history = {}
