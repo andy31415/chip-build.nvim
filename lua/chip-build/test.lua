@@ -84,27 +84,38 @@ describe("target_split", function()
 
   it('splits groups', function()
     assert.are.same(targets.split_target_string('foo-{a,b}'), {
-      prefixes = { 'foo', {'a', 'b'} },
+      prefixes = { 'foo', { 'a', 'b' } },
       suffixes = {},
     })
     assert.are.same(targets.split_target_string('foo-{a,b}-{x,yz1,a-test}'), {
-      prefixes = { 'foo', {'a', 'b'},  {'x', 'yz1', 'a-test'} },
+      prefixes = { 'foo', { 'a', 'b' }, { 'x', 'yz1', 'a-test' } },
       suffixes = {},
     })
   end)
 
   it('splits suffixes', function()
     assert.are.same(targets.split_target_string('foo-{a,b}[-foo]'), {
-      prefixes = { 'foo', {'a', 'b'} },
-      suffixes = {'foo'},
+      prefixes = { 'foo', { 'a', 'b' } },
+      suffixes = { 'foo' },
     })
     assert.are.same(targets.split_target_string('foo-{a,b}[-foo][-bar]'), {
-      prefixes = { 'foo', {'a', 'b'} },
-      suffixes = {'foo', 'bar'},
+      prefixes = { 'foo', { 'a', 'b' } },
+      suffixes = { 'foo', 'bar' },
     })
     assert.are.same(targets.split_target_string('no-groups[-foo][-bar]'), {
       prefixes = { 'no-groups' },
-      suffixes = {'foo', 'bar'},
+      suffixes = { 'foo', 'bar' },
+    })
+  end)
+
+  it('splits with end', function()
+    assert.are.same(targets.split_target_string('x-{a,b}-foo[-bar][-foo]'), {
+      prefixes = { 'x', { 'a', 'b' }, 'foo' },
+      suffixes = { 'bar', 'foo' },
+    })
+    assert.are.same(targets.split_target_string('x-{a,b}-{foo}[-bar][-foo]'), {
+      prefixes = { 'x', { 'a', 'b' }, { 'foo' } },
+      suffixes = { 'bar', 'foo' },
     })
   end)
 end)

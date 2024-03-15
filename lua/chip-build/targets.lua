@@ -46,42 +46,47 @@ M.split_target_string = function(s)
     suffixes = {},
   }
 
-  local first_group = s:find('{')
-  if first_group == nil then
-    first_group = s:find('%[')
-  end
-  if first_group == nil then
-    -- parse suffixes
-    table.insert(result.prefixes, part_name(s))
-    return result
-  end
+  -- General syntax of things:
+  --   (<entry>)*(<suffix>)*
+  --   where:
+  --     - entry is `single-value` OR `{value1,value2,value3}`
+  --     - suffix is ALWAYS `[value]`
 
-  table.insert(result.prefixes, part_name(s:sub(1, first_group - 1)))
-  s = s:sub(first_group)
-
-
-  -- next a set of {}-{} follow...
-  while s:sub(1, 1) == '{' do
-    local group_end = s:find('}')
-
-    local group = s:sub(2, group_end - 1)
-
-    table.insert(result.prefixes, {})
-    -- group is comma-separated:
-    local comma_pos = group:find(',')
-    while comma_pos ~= nil do
-      table.insert(
-        result.prefixes[#(result.prefixes)],
-        group:sub(1, comma_pos - 1))
-
-      group = group:sub(comma_pos + 1)
-      comma_pos = group:find(',')
-    end
-    table.insert(result.prefixes[#(result.prefixes)], group)
-
-    s = s:sub(group_end + 1)
-    if s:sub(1, 1) == '-' then
+  -- remove prefixes
+  while s:len() > 0 and s:sub(1, 1) ~= '[' do
+    while s:sub(1, 1) == '-' do
       s = s:sub(2)
+    end
+
+    if s:sub(1, 1) == '{' then
+      s = s:sub(2)
+      local group_end = s:find('}')
+      local group = s:sub(1, group_end - 1)
+      s = s:sub(group_end+1)
+
+      table.insert(result.prefixes, {})
+      -- group is comma-separated:
+      local comma_pos = group:find(',')
+      while comma_pos ~= nil do
+        table.insert(
+          result.prefixes[#(result.prefixes)],
+          group:sub(1, comma_pos - 1))
+
+        group = group:sub(comma_pos + 1)
+        comma_pos = group:find(',')
+      end
+      table.insert(result.prefixes[#(result.prefixes)], group)
+    else
+      local group_end = s:find('{')
+      if group_end == nil then
+        group_end = s:find('%[')
+      end
+      if group_end == nil then
+        group_end = s:len() + 1
+      end
+      local group = s:sub(1, group_end - 1)
+      table.insert(result.prefixes, part_name(group))
+      s = s:sub(group_end)
     end
   end
 
