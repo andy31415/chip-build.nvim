@@ -176,10 +176,13 @@ M.build = function()
           end
           if choice:sub(1, 8) == 'TARGET: ' then
             local target_name = choice:sub(9)
-            -- FIXME: this needs host logic ....
-            local is_host = false
+
+            local is_host = target_name:sub(1, 6) == 'HOST: '
+            if is_host then
+              target_name = target_name:sub(7)
+            end
             save_target_to_history(target_name, is_host)
-            run_build(choice:sub(7), is_host)
+            run_build(target_name, is_host)
             return
           end
           table.insert(components, choice)
