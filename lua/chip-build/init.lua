@@ -21,13 +21,13 @@ local run_build = function(target, in_vm)
       '/bin/bash',
       '-c',
       command
-    },
+    }
   else
     task_args = {
       '/bin/bash',
       '-c',
       command
-    },
+    }
   end
 
   local task = ovs.new_task({
