@@ -146,8 +146,13 @@ M.build = function()
             for i = 2, #components, 1 do
               target_name = target_name .. "-" .. components[i]
             end
-            save_target_to_history(target_name)
-            run_build(target_name, true)
+            if target_name:sub(1, 6) == 'HOST: ' then
+               save_target_to_history(target_name)
+               run_build(choice:sub(7), false)
+            else
+               save_target_to_history(target_name)
+               run_build(target_name, true)
+            end
             return
           end
           if choice:sub(1, 8) == 'TARGET: ' then
