@@ -108,7 +108,7 @@ M.build = function()
   function ChipBuildSelectTarget(components, opts)
     opts = opts or {}
     local next_choices, final
-    if #components > 0 then
+    if #components > 0 and components[1] == 'HOST: ' then
       local tail = {}
       for i = 2, #components, 1 do
         table.insert(tail, components[i])
