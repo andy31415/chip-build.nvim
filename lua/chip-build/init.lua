@@ -107,7 +107,12 @@ M.build = function()
 
   function ChipBuildSelectTarget(components, opts)
     opts = opts or {}
-    local next_choices, final = targets.next_component_choices(components)
+    local next_choices, final
+    if #components > 0 then
+      next_choices, final = targets.next_component_choices(components:sub(2, #components))
+    else
+      next_choices, final = targets.next_component_choices(components)
+    end
 
     local ui_choices = {}
     if opts.final or false then
@@ -121,6 +126,8 @@ M.build = function()
       for _, v in ipairs(history) do
         table.insert(ui_choices, 'TARGET: ' .. v)
       end
+
+      table.insert(ui_choices, 'HOST: ')
     end
 
     if next_choices then
@@ -147,11 +154,11 @@ M.build = function()
               target_name = target_name .. "-" .. components[i]
             end
             if target_name:sub(1, 6) == 'HOST: ' then
-               save_target_to_history(target_name)
-               run_build(choice:sub(7), false)
+              save_target_to_history(target_name)
+              run_build(choice:sub(7), false)
             else
-               save_target_to_history(target_name)
-               run_build(target_name, true)
+              save_target_to_history(target_name)
+              run_build(target_name, true)
             end
             return
           end
