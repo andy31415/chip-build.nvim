@@ -118,7 +118,20 @@ end
 
 local all_targets = {}
 for _, target in ipairs(M.split_lines(CHIP_BUILD_TARGETS)) do
-  table.insert(all_targets, M.split_target_string(target))
+  local vm_chain = M.split_target_string(target)
+  table.insert(all_targets, vm_chain)
+
+  -- Allow a 'HOST: ' prefix to run host-based builds
+  local host_chain = {
+    prefixes = {},
+    suffixes = vm_chain.suffixes,
+  }
+
+  table.insert(host_chain.prefixes, "HOST: ")
+  for _, value in ipairs(vm_chain.prefixes) do
+    table.insert(host_chain.prefixes, value)
+  end
+  table.insert(all_targets, host_chain)
 end
 
 

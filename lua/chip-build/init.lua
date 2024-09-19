@@ -3,22 +3,36 @@ local M = {}
 
 local targets = require('chip-build.targets')
 
-local run_build = function(target)
+local run_build = function(target, in_vm)
   local ovs = require('overseer')
 
-  local task = ovs.new_task({
-    cmd = { 'podman' },
-    args = {
+  local command =
+      string.format(
+        "source ./scripts/activate.sh >/dev/null && ./scripts/build/build_examples.py --log-level info --target '%s' build",
+        target)
+
+  local task_args
+  if in_vm then
+    task_args = {
       'exec',
       '-w',
       '/workspace',
       'bld_vscode',
       '/bin/bash',
       '-c',
-      string.format(
-        "source ./scripts/activate.sh >/dev/null && ./scripts/build/build_examples.py --log-level info --target '%s' build",
-        target)
+      command
     },
+  else
+    task_args = {
+      '/bin/bash',
+      '-c',
+      command
+    },
+  end
+
+  local task = ovs.new_task({
+    cmd = { 'podman' },
+    args = task_args,
     components = {
       {
         "on_output_quickfix",
@@ -133,13 +147,19 @@ M.build = function()
               target_name = target_name .. "-" .. components[i]
             end
             save_target_to_history(target_name)
-            run_build(target_name)
+            run_build(target_name, true)
             return
           end
-          if choice:sub(1,8) == 'TARGET: ' then
+          if choice:sub(1, 8) == 'TARGET: ' then
             local target_name = choice:sub(9)
             save_target_to_history(target_name)
-            run_build(target_name)
+            run_build(target_name, true)
+            return
+          end
+          if choice:sub(1, 6) == 'HOST: ' then
+            local target_name = choice:sub(7)
+            save_target_to_history(target_name)
+            run_build(target_name, false)
             return
           end
           table.insert(components, choice)
