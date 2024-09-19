@@ -32,7 +32,7 @@ In LunarVim you can do:
 Install [luarocks](http://luarocks.org).
 
 [busted](https://lunarmodules.github.io/busted/) unit test framework via 
-`luarocks instal busted --local`
+`luarocks install busted --local`
 
 Then you can add `$HOME/.luarocks/bin` to your path or execute
 `$HOME/.luarocks/bin/busted` directly from within the `lua/chip-build`
