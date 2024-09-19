@@ -3,7 +3,7 @@ local M = {}
 
 local targets = require('chip-build.targets')
 
-local run_build = function(target, in_vm)
+local run_build = function(target, is_host)
   local ovs = require('overseer')
 
   local command =
@@ -12,7 +12,12 @@ local run_build = function(target, in_vm)
         target)
 
   local task_args
-  if in_vm then
+  local task_cmd
+  if is_host then
+    task_cmd = '/bin/bash'
+    task_args = { '-c', command }
+  else
+    task_cmd = 'podman'
     task_args = {
       'exec',
       '-w',
@@ -22,16 +27,10 @@ local run_build = function(target, in_vm)
       '-c',
       command
     }
-  else
-    task_args = {
-      '/bin/bash',
-      '-c',
-      command
-    }
   end
 
   local task = ovs.new_task({
-    cmd = { 'podman' },
+    cmd = { task_cmd },
     args = task_args,
     components = {
       {
@@ -69,7 +68,7 @@ local load_history = function()
   return data
 end
 
-local save_target_to_history = function(txt)
+local save_target_to_history = function(target, is_host)
   local save_path = vim.fn.stdpath('cache') .. '/chip-build-history.json'
   -- Will NOT print as the messages can get annoying
   vim.notify(string.format("Saving history to: %s", save_path), vim.log.levels.DEBUG)
@@ -78,12 +77,13 @@ local save_target_to_history = function(txt)
   local history = {}
   local existing_history = {}
 
-  table.insert(history, 1, txt)
-  existing_history[txt] = true
+  table.insert(history, 1, {target=target, is_host=is_host})
+  existing_history[target .. "/" .. tostring(is_host)] = true
 
   for _, v in ipairs(old_history) do
-    if not existing_history[v] then
-      existing_history[v] = true
+    local key = v.target .. "/" .. tostring(v.is_host)
+    if not existing_history[key] then
+      existing_history[key] = true
       table.insert(history, v)
     end
   end
@@ -109,7 +109,11 @@ M.build = function()
     opts = opts or {}
     local next_choices, final
     if #components > 0 then
-      next_choices, final = targets.next_component_choices(components:sub(2, #components))
+      local tail = {}
+      for i = 2,  #components, 1 do
+         table.insert(tail, components[i])
+      end
+      next_choices, final = targets.next_component_choices(tail)
     else
       next_choices, final = targets.next_component_choices(components)
     end
@@ -124,7 +128,11 @@ M.build = function()
       -- this is the first expectation ... add UI shoices for  history
       history = load_history()
       for _, v in ipairs(history) do
-        table.insert(ui_choices, 'TARGET: ' .. v)
+        if v['is_host'] then
+          table.insert(ui_choices, 'TARGET: HOST: ' .. v['target'])
+        else
+          table.insert(ui_choices, 'TARGET: ' .. v['target'])
+        end
       end
 
       table.insert(ui_choices, 'HOST: ')
@@ -149,29 +157,29 @@ M.build = function()
 
           local choice = selected[1]
           if choice == 'DONE' then
-            local target_name = components[1]
-            for i = 2, #components, 1 do
+            local is_host = components[1] == 'HOST: '
+            local target_start
+            if is_host then
+              target_start = 2
+            else
+              target_start = 1
+            end
+
+            local target_name = components[target_start]
+
+            for i = target_start + 1, #components, 1 do
               target_name = target_name .. "-" .. components[i]
             end
-            if target_name:sub(1, 6) == 'HOST: ' then
-              save_target_to_history(target_name)
-              run_build(choice:sub(7), false)
-            else
-              save_target_to_history(target_name)
-              run_build(target_name, true)
-            end
+            save_target_to_history(target_name, is_host)
+            run_build(target_name, is_host)
             return
           end
           if choice:sub(1, 8) == 'TARGET: ' then
             local target_name = choice:sub(9)
-            save_target_to_history(target_name)
-            run_build(target_name, true)
-            return
-          end
-          if choice:sub(1, 6) == 'HOST: ' then
-            local target_name = choice:sub(7)
-            save_target_to_history(target_name)
-            run_build(target_name, false)
+            -- FIXME: this needs host logic ....
+            local is_host = false
+            save_target_to_history(target_name, is_host)
+            run_build(choice:sub(7), is_host)
             return
           end
           table.insert(components, choice)
