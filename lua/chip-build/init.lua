@@ -77,7 +77,7 @@ local save_target_to_history = function(target, is_host)
   local history = {}
   local existing_history = {}
 
-  table.insert(history, 1, {target=target, is_host=is_host})
+  table.insert(history, 1, { target = target, is_host = is_host })
   existing_history[target .. "/" .. tostring(is_host)] = true
 
   for _, v in ipairs(old_history) do
@@ -110,8 +110,8 @@ M.build = function()
     local next_choices, final
     if #components > 0 then
       local tail = {}
-      for i = 2,  #components, 1 do
-         table.insert(tail, components[i])
+      for i = 2, #components, 1 do
+        table.insert(tail, components[i])
       end
       next_choices, final = targets.next_component_choices(tail)
     else
@@ -128,10 +128,15 @@ M.build = function()
       -- this is the first expectation ... add UI shoices for  history
       history = load_history()
       for _, v in ipairs(history) do
-        if v['is_host'] then
-          table.insert(ui_choices, 'TARGET: HOST: ' .. v['target'])
+        -- new format update to not require deletion of old items
+        if v['target'] then
+          if v['is_host'] then
+            table.insert(ui_choices, 'TARGET: HOST: ' .. v['target'])
+          else
+            table.insert(ui_choices, 'TARGET: ' .. v['target'])
+          end
         else
-          table.insert(ui_choices, 'TARGET: ' .. v['target'])
+            table.insert(ui_choices, 'TARGET: ' .. v)
         end
       end
 
