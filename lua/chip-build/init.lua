@@ -2,6 +2,7 @@
 local M = {}
 
 local targets = require("chip-build.targets")
+local clangd_config = require("chip-build.clangd_config")
 
 local run_build = function(target, is_host)
 	local ovs = require("overseer")
