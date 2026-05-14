@@ -211,11 +211,11 @@ M.build = function()
 end
 
 M.clangd_select = function()
-  clangd_config.select_compilation_database()
+	clangd_config.select_compilation_database()
 end
 
 M.active_compilation_database_name = function()
-  return clangd_config.active_compilation_database_name()
+	return clangd_config.active_compilation_database_name()
 end
 
 --
@@ -230,8 +230,6 @@ M.devel_reset = function()
 end
 
 M.setup = function(options)
-<<<<<<< conflict 2 of 2
-+++++++ xlrurvwm ee5ccbae "target updates" (rebase destination)
 	options = options or {}
 
 	vim.api.nvim_create_user_command("ChipBuild", function(opts)
@@ -254,31 +252,31 @@ M.setup = function(options)
 		-- run for testing of development
 		vim.api.nvim_set_keymap("n", "<leader>obt", "<CMD>source lua/chip-build/init.lua<CR>", { noremap = true })
 	end
-   options = options or {}
+	options = options or {}
 
-   vim.api.nvim_create_user_command("ChipBuild", function(opts)
-     local cb = require('chip-build')
-     local cmd = opts.args
-     if cmd == "build" then
-       cb.build()
-     elseif cmd == "clangd_select" then
-      cb.clangd_select()
-     elseif cmd == "devel_reset" then
-       cb.devel_reset()
-     else
-       print(string.format("Unknown chip-build command: %s", cmd))
-     end
-   end, {
-     nargs = 1
-   })
+	vim.api.nvim_create_user_command("ChipBuild", function(opts)
+		local cb = require("chip-build")
+		local cmd = opts.args
+		if cmd == "build" then
+			cb.build()
+		elseif cmd == "clangd_select" then
+			cb.clangd_select()
+		elseif cmd == "devel_reset" then
+			cb.devel_reset()
+		else
+			print(string.format("Unknown chip-build command: %s", cmd))
+		end
+	end, {
+		nargs = 1,
+	})
 
-   vim.api.nvim_set_keymap('n', '<leader>obb', "<CMD>ChipBuild build<CR>", { noremap = true })
-   vim.api.nvim_set_keymap('n', '<leader>obc', "<CMD>ChipBuild clangd_select<CR>", { noremap = true })
-   if options.development or false then
-     vim.api.nvim_set_keymap('n', '<leader>obr', "<CMD>ChipBuild devel_reset<CR>", { noremap = true })
-     -- run for testing of development
-     vim.api.nvim_set_keymap('n', '<leader>obt', "<CMD>source lua/chip-build/init.lua<CR>", { noremap = true })
-   end
+	vim.api.nvim_set_keymap("n", "<leader>obb", "<CMD>ChipBuild build<CR>", { noremap = true })
+	vim.api.nvim_set_keymap("n", "<leader>obc", "<CMD>ChipBuild clangd_select<CR>", { noremap = true })
+	if options.development or false then
+		vim.api.nvim_set_keymap("n", "<leader>obr", "<CMD>ChipBuild devel_reset<CR>", { noremap = true })
+		-- run for testing of development
+		vim.api.nvim_set_keymap("n", "<leader>obt", "<CMD>source lua/chip-build/init.lua<CR>", { noremap = true })
+	end
 end
 
 return M
