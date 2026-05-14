@@ -25,6 +25,19 @@ In LunarVim you can do:
   },
 ```
 
+## Usage
+
+- `:ChipBuild build` (or `<leader>obb`): Select and run a build target.
+- `:ChipBuild clangd_select` (or `<leader>obc`): Select a compilation database from `out/` to update `.clangd`.
+
+### Statusline Integration
+
+You can display the active `.clangd` compilation database name in your statusline (e.g., lualine) using:
+
+```lua
+require('chip-build').active_compilation_database_name()
+```
+
 ## Development
 
 ### Unit testing

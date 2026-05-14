@@ -154,3 +154,112 @@ describe("target_split", function()
 		})
 	end)
 end)
+
+describe("clangd_config", function()
+  local clangd_config
+  local mock_files
+  local orig_io_open = io.open
+
+  before_each(function()
+    -- Mock vim globals
+    _G.vim = {
+      fn = {
+        getcwd = function() return "/mock/root" end,
+        globpath = function(path, expr, _, _)
+          if path == "/mock/root/out" then
+            return {
+              "/mock/root/out/target1/compile_commands.json",
+              "/mock/root/out/target2/compile_commands.json",
+              "/mock/root/out/target3/sub/compile_commands.json",
+            }
+          end
+          return {}
+        end,
+        fnamemodify = function(path, mod)
+          if mod == ':h' then
+            return path:match("^(.*)/[^/]*$")
+          elseif mod == ':t' then
+            return path:match("^.*/([^/]*)$")
+          end
+          return path
+        end
+      }
+    }
+
+    -- Mock io.open
+    mock_files = {
+      ["/mock/root/.clangd"] = {
+        content = {
+          "CompileFlags:",
+          "  CompilationDatabase: /mock/root/out/target1/",
+          "  # CompilationDatabase: /mock/root/out/target2",
+        }
+      }
+    }
+
+    _G.io.open = function(path, mode)
+      mode = mode or 'r'
+      if path:sub(1, 10) == "/mock/root" then
+        if mode == 'r' then
+          local f = mock_files[path]
+          if not f then return nil end
+          local i = 0
+          return {
+            lines = function()
+              return function()
+                i = i + 1
+                return f.content[i]
+              end
+            end,
+            close = function() end
+          }
+        elseif mode == 'w' then
+          mock_files[path] = { content = {} }
+          return {
+            write = function(self, str)
+              str = str:gsub("\n$", "")
+              table.insert(mock_files[path].content, str)
+            end,
+            close = function() end
+          }
+        end
+      else
+        return orig_io_open(path, mode)
+      end
+    end
+
+    clangd_config = require('chip-build.clangd_config')
+  end)
+
+  after_each(function()
+    _G.io.open = orig_io_open
+  end)
+
+  it("finds compilation databases", function()
+    local dbs = clangd_config.find_compilation_databases()
+    assert.are.same({
+      { display = "target1", absolute_path = "/mock/root/out/target1" },
+      { display = "target2", absolute_path = "/mock/root/out/target2" },
+      { display = "target3/sub", absolute_path = "/mock/root/out/target3/sub" },
+    }, dbs)
+  end)
+
+  it("gets current compilation database", function()
+    assert.are.equal("/mock/root/out/target1", clangd_config.get_current_compilation_database())
+  end)
+
+  it("gets active compilation database name", function()
+    assert.are.equal("target1", clangd_config.active_compilation_database_name())
+  end)
+
+  it("sets compilation database", function()
+    clangd_config.set_compilation_database("/mock/root/out/target2")
+    assert.are.equal("/mock/root/out/target2", clangd_config.get_current_compilation_database())
+    -- Verify original comment was preserved
+    assert.are.same({
+      "CompileFlags:",
+      "  CompilationDatabase: /mock/root/out/target2",
+      "  # CompilationDatabase: /mock/root/out/target2",
+    }, mock_files["/mock/root/.clangd"].content)
+  end)
+end)
