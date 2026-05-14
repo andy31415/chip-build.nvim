@@ -166,11 +166,11 @@ describe("clangd_config", function()
       fn = {
         getcwd = function() return "/mock/root" end,
         globpath = function(path, expr, _, _)
-          if path == "/mock/root/out" then
+          if path == "/mock/root/out" and expr == "linux-x64-*/compile_commands.json" then
             return {
-              "/mock/root/out/target1/compile_commands.json",
-              "/mock/root/out/target2/compile_commands.json",
-              "/mock/root/out/target3/sub/compile_commands.json",
+              "/mock/root/out/linux-x64-target1/compile_commands.json",
+              "/mock/root/out/linux-x64-target2/compile_commands.json",
+              "/mock/root/out/linux-x64-target3/sub/compile_commands.json",
             }
           end
           return {}
@@ -191,8 +191,8 @@ describe("clangd_config", function()
       ["/mock/root/.clangd"] = {
         content = {
           "CompileFlags:",
-          "  CompilationDatabase: /mock/root/out/target1/",
-          "  # CompilationDatabase: /mock/root/out/target2",
+          "  CompilationDatabase: /mock/root/out/linux-x64-target1/",
+          "  # CompilationDatabase: /mock/root/out/linux-x64-target2",
         }
       }
     }
@@ -238,28 +238,28 @@ describe("clangd_config", function()
   it("finds compilation databases", function()
     local dbs = clangd_config.find_compilation_databases()
     assert.are.same({
-      { display = "target1", absolute_path = "/mock/root/out/target1" },
-      { display = "target2", absolute_path = "/mock/root/out/target2" },
-      { display = "target3/sub", absolute_path = "/mock/root/out/target3/sub" },
+      { display = "linux-x64-target1", absolute_path = "/mock/root/out/linux-x64-target1" },
+      { display = "linux-x64-target2", absolute_path = "/mock/root/out/linux-x64-target2" },
+      { display = "linux-x64-target3/sub", absolute_path = "/mock/root/out/linux-x64-target3/sub" },
     }, dbs)
   end)
 
   it("gets current compilation database", function()
-    assert.are.equal("/mock/root/out/target1", clangd_config.get_current_compilation_database())
+    assert.are.equal("/mock/root/out/linux-x64-target1", clangd_config.get_current_compilation_database())
   end)
 
   it("gets active compilation database name", function()
-    assert.are.equal("target1", clangd_config.active_compilation_database_name())
+    assert.are.equal("linux-x64-target1", clangd_config.active_compilation_database_name())
   end)
 
   it("sets compilation database", function()
-    clangd_config.set_compilation_database("/mock/root/out/target2")
-    assert.are.equal("/mock/root/out/target2", clangd_config.get_current_compilation_database())
+    clangd_config.set_compilation_database("/mock/root/out/linux-x64-target2")
+    assert.are.equal("/mock/root/out/linux-x64-target2", clangd_config.get_current_compilation_database())
     -- Verify original comment was preserved
     assert.are.same({
       "CompileFlags:",
-      "  CompilationDatabase: /mock/root/out/target2",
-      "  # CompilationDatabase: /mock/root/out/target2",
+      "  CompilationDatabase: /mock/root/out/linux-x64-target2",
+      "  # CompilationDatabase: /mock/root/out/linux-x64-target2",
     }, mock_files["/mock/root/.clangd"].content)
   end)
 end)

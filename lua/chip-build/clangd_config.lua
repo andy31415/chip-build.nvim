@@ -14,7 +14,7 @@ end
 
 M.find_compilation_databases = function()
   local out_dir = get_out_dir_path()
-  local files = vim.fn.globpath(out_dir, '**/compile_commands.json', true, true)
+  local files = vim.fn.globpath(out_dir, 'linux-x64-*/compile_commands.json', true, true)
   local results = {}
   for _, file in ipairs(files) do
     local dir = vim.fn.fnamemodify(file, ':h')
