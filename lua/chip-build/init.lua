@@ -221,36 +221,50 @@ end
 
 --
 
+local is_refreshing = false
+
 M.refresh_targets = function()
+	if is_refreshing then
+		vim.notify("Targets refresh already in progress...", vim.log.levels.WARN)
+		return
+	end
+
 	if vim.fn.filereadable("./scripts/build/build_examples.py") == 0 then
 		vim.notify("./scripts/build/build_examples.py not found. Are you in connectedhomeip root?", vim.log.levels.ERROR)
 		return
 	end
 
+	is_refreshing = true
 	vim.notify("Refreshing targets...", vim.log.levels.INFO)
-	local cmd = "bash -c 'source scripts/activate.sh >/dev/null && ./scripts/build/build_examples.py targets'"
+	local cmd = "bash -c 'source scripts/activate.sh >/dev/null && ./scripts/build/build_examples.py --quiet targets'"
 
 	local output = {}
+	local err_output = {}
 	vim.fn.jobstart(cmd, {
 		stdout_buffered = true,
+		stderr_buffered = true,
 		on_stdout = function(_, data, _)
 			output = data
 		end,
+		on_stderr = function(_, data, _)
+			err_output = data
+		end,
 		on_exit = function(_, code, _)
+			is_refreshing = false
 			if code == 0 then
 				local content = table.concat(output, "\n")
-				local cache_path = vim.fn.stdpath("cache") .. "/chip-build-targets.txt"
-				local f = io.open(cache_path, "w")
-				if f then
-					f:write(content)
-					f:close()
-					targets.reload_targets()
+				local success, err = targets.update_targets_cache(content)
+				if success then
 					vim.notify("Targets refreshed successfully", vim.log.levels.INFO)
 				else
-					vim.notify("Failed to write targets cache", vim.log.levels.ERROR)
+					vim.notify("Failed to update targets cache: " .. tostring(err), vim.log.levels.ERROR)
 				end
 			else
-				vim.notify("Failed to refresh targets (exit code " .. code .. ")", vim.log.levels.ERROR)
+				local err_msg = table.concat(err_output, "\n")
+				if err_msg == "" then
+					err_msg = "Unknown error (exit code " .. code .. ")"
+				end
+				vim.notify("Failed to refresh targets:\n" .. err_msg, vim.log.levels.ERROR)
 			end
 		end,
 	})

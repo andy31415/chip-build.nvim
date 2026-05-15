@@ -149,6 +149,21 @@ M.reload_targets = function()
 	end
 end
 
+M.update_targets_cache = function(content)
+	local cache_path = get_cache_path()
+	if not cache_path then
+		return false, "No cache path available"
+	end
+	local f = io.open(cache_path, "w")
+	if f == nil then
+		return false, string.format("Failed to write to %s", cache_path)
+	end
+	f:write(content)
+	f:close()
+	M.reload_targets()
+	return true
+end
+
 M.reload_targets()
 
 M.next_component_choices = function(components, opts)
