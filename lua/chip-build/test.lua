@@ -263,3 +263,79 @@ describe("clangd_config", function()
     }, mock_files["/mock/root/.clangd"].content)
   end)
 end)
+
+describe("targets caching", function()
+  local orig_vim = _G.vim
+  local orig_io_open = io.open
+  local mock_files = {}
+
+  before_each(function()
+    _G.vim = {
+      fn = {
+        stdpath = function(path)
+          if path == "cache" then
+            return "/mock/cache"
+          end
+          return "/mock/other"
+        end
+      }
+    }
+
+    mock_files = {
+      ["/mock/cache/chip-build-targets.txt"] = {
+        content = {
+          "custom-target1",
+          "custom-target2-{a,b}[-opt]",
+        }
+      }
+    }
+
+    _G.io.open = function(path, mode)
+      mode = mode or 'r'
+      if path:sub(1, 11) == "/mock/cache" then
+        if mode == 'r' then
+          local f = mock_files[path]
+          if not f then return nil end
+          return {
+            read = function(self, arg)
+              if arg == "*a" then
+                return table.concat(f.content, "\n")
+              end
+              return nil
+            end,
+            close = function() end
+          }
+        elseif mode == 'w' then
+          mock_files[path] = { content = {} }
+          return {
+            write = function(self, str)
+              mock_files[path].content = { str }
+            end,
+            close = function() end
+          }
+        end
+      else
+        return orig_io_open(path, mode)
+      end
+    end
+  end)
+
+  after_each(function()
+    _G.vim = orig_vim
+    _G.io.open = orig_io_open
+    targets.reload_targets()
+  end)
+
+  it("loads targets from cache when available", function()
+    targets.reload_targets()
+    local next_choices, _ = targets.next_component_choices({})
+    assert.are.same({ "custom-target1", "custom-target2" }, next_choices)
+  end)
+
+  it("falls back to default when cache is missing", function()
+    mock_files = {} -- no cache
+    targets.reload_targets()
+    local next_choices, _ = targets.next_component_choices({})
+    assert.are.equal("ameba-amebad", next_choices[1])
+  end)
+end)

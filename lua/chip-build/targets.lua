@@ -111,10 +111,45 @@ M.split_lines = function(txt)
 	return result
 end
 
-local all_targets = {}
-for _, target in ipairs(M.split_lines(CHIP_BUILD_TARGETS)) do
-	table.insert(all_targets, M.split_target_string(target))
+local get_cache_path = function()
+	if vim and vim.fn and vim.fn.stdpath then
+		return vim.fn.stdpath("cache") .. "/chip-build-targets.txt"
+	end
+	return nil
 end
+
+local load_cached_targets_string = function()
+	local cache_path = get_cache_path()
+	if not cache_path then
+		return nil
+	end
+	local f = io.open(cache_path, "r")
+	if f == nil then
+		return nil
+	end
+	local content = f:read("*a")
+	f:close()
+	return content
+end
+
+M.get_targets_string = function()
+	local cached = load_cached_targets_string()
+	if cached and cached ~= "" then
+		return cached
+	end
+	return CHIP_BUILD_TARGETS
+end
+
+local all_targets = {}
+
+M.reload_targets = function()
+	all_targets = {}
+	for _, target in ipairs(M.split_lines(M.get_targets_string())) do
+		table.insert(all_targets, M.split_target_string(target))
+	end
+end
+
+M.reload_targets()
 
 M.next_component_choices = function(components, opts)
 	opts = opts or {}

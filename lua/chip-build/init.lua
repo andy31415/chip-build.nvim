@@ -221,6 +221,41 @@ end
 
 --
 
+M.refresh_targets = function()
+	if vim.fn.filereadable("./scripts/build/build_examples.py") == 0 then
+		vim.notify("./scripts/build/build_examples.py not found. Are you in connectedhomeip root?", vim.log.levels.ERROR)
+		return
+	end
+
+	vim.notify("Refreshing targets...", vim.log.levels.INFO)
+	local cmd = "bash -c 'source scripts/activate.sh >/dev/null && ./scripts/build/build_examples.py targets'"
+
+	local output = {}
+	vim.fn.jobstart(cmd, {
+		stdout_buffered = true,
+		on_stdout = function(_, data, _)
+			output = data
+		end,
+		on_exit = function(_, code, _)
+			if code == 0 then
+				local content = table.concat(output, "\n")
+				local cache_path = vim.fn.stdpath("cache") .. "/chip-build-targets.txt"
+				local f = io.open(cache_path, "w")
+				if f then
+					f:write(content)
+					f:close()
+					targets.reload_targets()
+					vim.notify("Targets refreshed successfully", vim.log.levels.INFO)
+				else
+					vim.notify("Failed to write targets cache", vim.log.levels.ERROR)
+				end
+			else
+				vim.notify("Failed to refresh targets (exit code " .. code .. ")", vim.log.levels.ERROR)
+			end
+		end,
+	})
+end
+
 M.devel_reset = function()
 	if package.loaded["chip-build"] then
 		print("Mark unloaded")
@@ -238,30 +273,10 @@ M.setup = function(options)
 		local cmd = opts.args
 		if cmd == "build" then
 			cb.build()
-		elseif cmd == "devel_reset" then
-			cb.devel_reset()
-		else
-			print(string.format("Unknown chip-build command: %s", cmd))
-		end
-	end, {
-		nargs = 1,
-	})
-
-	vim.api.nvim_set_keymap("n", "<leader>obb", "<CMD>ChipBuild build<CR>", { noremap = true })
-	if options.development or false then
-		vim.api.nvim_set_keymap("n", "<leader>obr", "<CMD>ChipBuild devel_reset<CR>", { noremap = true })
-		-- run for testing of development
-		vim.api.nvim_set_keymap("n", "<leader>obt", "<CMD>source lua/chip-build/init.lua<CR>", { noremap = true })
-	end
-	options = options or {}
-
-	vim.api.nvim_create_user_command("ChipBuild", function(opts)
-		local cb = require("chip-build")
-		local cmd = opts.args
-		if cmd == "build" then
-			cb.build()
 		elseif cmd == "clangd_select" then
 			cb.clangd_select()
+		elseif cmd == "refresh_targets" then
+			cb.refresh_targets()
 		elseif cmd == "devel_reset" then
 			cb.devel_reset()
 		else
@@ -273,8 +288,9 @@ M.setup = function(options)
 
 	vim.api.nvim_set_keymap("n", "<leader>obb", "<CMD>ChipBuild build<CR>", { noremap = true })
 	vim.api.nvim_set_keymap("n", "<leader>obc", "<CMD>ChipBuild clangd_select<CR>", { noremap = true })
+	vim.api.nvim_set_keymap("n", "<leader>obr", "<CMD>ChipBuild refresh_targets<CR>", { noremap = true })
 	if options.development or false then
-		vim.api.nvim_set_keymap("n", "<leader>obr", "<CMD>ChipBuild devel_reset<CR>", { noremap = true })
+		vim.api.nvim_set_keymap("n", "<leader>obd", "<CMD>ChipBuild devel_reset<CR>", { noremap = true })
 		-- run for testing of development
 		vim.api.nvim_set_keymap("n", "<leader>obt", "<CMD>source lua/chip-build/init.lua<CR>", { noremap = true })
 	end
